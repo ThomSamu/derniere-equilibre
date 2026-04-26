@@ -1,0 +1,2045 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dernier Équilibre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black: #0a0a0a;
+  --white: #ffffff;
+  --g50:  #f7f7f7;
+  --g100: #f0f0f0;
+  --g200: #e4e4e4;
+  --g300: #cccccc;
+  --g400: #aaaaaa;
+  --g500: #888888;
+  --g600: #666666;
+  --g700: #444444;
+  --g800: #222222;
+  --sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', 'Consolas', monospace;
+  --sidebar-w: 220px;
+  --list-w: 280px;
+}
+html, body { height: 100%; background: var(--black); color: var(--black); font-family: var(--sans); font-size: 14px; -webkit-font-smoothing: antialiased; }
+
+/* ══════════════════════════════════════════════════════
+   INTRO OVERLAY
+══════════════════════════════════════════════════════ */
+#intro-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--black);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column;
+  transition: opacity 0.55s cubic-bezier(.4,0,1,1), transform 0.55s cubic-bezier(.4,0,1,1);
+}
+#intro-overlay.hiding {
+  opacity: 0;
+  transform: scale(1.05) translateY(-10px);
+  pointer-events: none;
+}
+
+.intro-inner { text-align: center; user-select: none; }
+
+.intro-logo {
+  width: 36px; height: 36px; border: 2.5px solid var(--white);
+  margin: 0 auto 32px; position: relative;
+}
+.intro-logo::after {
+  content: ''; position: absolute; inset: 4px; border: 1px solid rgba(255,255,255,0.25);
+}
+
+.intro-title {
+  font-size: 48px; font-weight: 800; color: var(--white);
+  letter-spacing: -0.04em; line-height: 1; margin-bottom: 14px;
+}
+.intro-cursor {
+  display: inline-block; width: 3px; height: 46px;
+  background: var(--white); margin-left: 4px; vertical-align: middle;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.intro-sub {
+  font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: rgba(255,255,255,0.35); margin-bottom: 56px; font-weight: 500;
+}
+
+.intro-divider { width: 40px; height: 1px; background: rgba(255,255,255,0.15); margin: 0 auto 56px; }
+
+.intro-start {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 14px 32px; background: transparent;
+  border: 1px solid rgba(255,255,255,0.4); color: var(--white);
+  font-family: var(--sans); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.intro-start:hover { border-color: var(--white); background: rgba(255,255,255,0.06); }
+.intro-start-arrow { transition: transform 0.2s; }
+.intro-start:hover .intro-start-arrow { transform: translateX(5px); }
+
+.intro-note {
+  margin: 0 auto 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.78);
+  letter-spacing: 0.06em;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 10px 14px;
+  display: block;
+  width: fit-content;
+}
+
+/* Intro text block */
+.intro-lore {
+  max-width: 480px; margin: 0 auto 40px;
+  text-align: left;
+}
+.intro-lore p {
+  font-size: 14px; line-height: 1.85; color: rgba(255,255,255,0.55);
+  margin-bottom: 14px;
+}
+.intro-lore p strong { color: rgba(255,255,255,0.9); font-weight: 700; }
+.intro-lore p em { font-style: italic; color: rgba(255,255,255,0.4); }
+.intro-lore-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 24px 0; }
+
+.intro-stats {
+  display: flex; justify-content: center; gap: 28px;
+  margin-bottom: 44px;
+}
+.intro-stat {
+  text-align: center;
+}
+.intro-stat-num {
+  font-size: 28px; font-weight: 800; font-family: var(--mono);
+  color: var(--white); line-height: 1;
+}
+.intro-stat-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.3); margin-top: 5px;
+}
+.intro-stat-bar {
+  width: 60px; height: 3px; background: rgba(255,255,255,0.1);
+  margin: 6px auto 0; position: relative;
+}
+.intro-stat-bar::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,255,255,0.5); width: 60%;
+}
+
+/* ══════════════════════════════════════════════════════
+   NOTIFICATION SYSTEM
+══════════════════════════════════════════════════════ */
+#notif-container {
+  position: fixed; top: 52px; right: 0; z-index: 8000;
+  display: flex; flex-direction: column; gap: 10px;
+  pointer-events: none; padding: 12px;
+}
+.notif-card {
+  width: 460px; background: var(--white);
+  border: 2px solid var(--black);
+  border-left: 6px solid var(--black);
+  pointer-events: all;
+  animation: notifIn 0.4s cubic-bezier(.22,1,.36,1) forwards;
+  position: relative; overflow: hidden;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.12);
+}
+.notif-card.notif-hiding { animation: notifOut 0.3s ease forwards; }
+@keyframes notifIn {
+  0%   { opacity: 0; transform: translateX(30px) scale(0.97); }
+  60%  { opacity: 1; transform: translateX(-4px) scale(1.01); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes notifOut {
+  from { opacity: 1; transform: translateX(0);   max-height: 300px; margin-bottom: 0; }
+  to   { opacity: 0; transform: translateX(30px); max-height: 0; margin-bottom: -10px; }
+}
+.notif-header {
+  background: var(--black); color: var(--white);
+  padding: 8px 14px 7px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.notif-source {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: rgba(255,255,255,0.85);
+}
+.notif-emoji { font-size: 16px; }
+.notif-top {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px 14px 12px;
+}
+.notif-text { font-size: 15px; line-height: 1.6; color: var(--black); font-weight: 500; flex: 1; }
+.notif-close {
+  width: 22px; height: 22px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: rgba(255,255,255,0.6); font-size: 18px; line-height: 1;
+  border: none; background: transparent; font-family: var(--sans);
+  transition: color 0.15s;
+}
+.notif-close:hover { color: var(--white); }
+.notif-progress { display: none; }
+.notif-progress-bar {
+  display: none;
+  transition: width linear;
+}
+
+/* ══════════════════════════════════════════════════════
+   TOUR 12 INTRUSIVE ALERTS
+══════════════════════════════════════════════════════ */
+#t12-alert-layer {
+  position: fixed; inset: 0; z-index: 11000;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+}
+.t12-alert {
+  width: min(92vw, 940px);
+  max-height: 82vh;
+  overflow: auto;
+  background: var(--white);
+  border: 3px solid var(--black);
+  box-shadow: 0 24px 54px rgba(0,0,0,0.35);
+  animation: t12Pop 0.2s ease;
+}
+@keyframes t12Pop {
+  from { opacity: 0; transform: scale(0.97) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.t12-alert-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--g200);
+  color: var(--white); background: var(--black);
+}
+.t12-alert-type {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+}
+.t12-alert-close {
+  border: 1px solid rgba(255,255,255,0.5); background: transparent; color: var(--white);
+  padding: 5px 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; cursor: pointer;
+}
+.t12-alert-body { padding: 18px 18px 16px; }
+.t12-alert-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 10px; }
+.t12-alert-msg p { font-size: 19px; line-height: 1.55; color: var(--g800); margin-bottom: 10px; }
+.t12-alert-foot { border-top: 1px solid var(--g200); padding: 12px 18px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--g500); }
+.t12-progress {
+  margin-top: 14px; font-size: 11px; letter-spacing: 0.11em; text-transform: uppercase;
+  color: var(--g500);
+}
+
+/* ══════════════════════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════════════════════ */
+#app {
+  display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+  background: var(--white);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.6s cubic-bezier(.22,1,.36,1) 0.28s,
+              transform 0.6s cubic-bezier(.22,1,.36,1) 0.28s;
+}
+#app.visible { opacity: 1; transform: translateY(0); }
+
+/* ── TITLEBAR ─────────────────────────────────────── */
+.titlebar {
+  height: 44px; background: var(--black); color: var(--white);
+  display: grid;
+  grid-template-columns: var(--sidebar-w) var(--list-w) 1fr;
+  align-items: center;
+  flex-shrink: 0;
+}
+.tb-logo { display: flex; align-items: center; gap: 9px; padding: 0 14px; }
+.tb-square { width: 16px; height: 16px; border: 2px solid var(--white); flex-shrink: 0; }
+.tb-name { font-size: 11px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; }
+.tb-search {
+  width: 100%; height: 26px;
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.13);
+  color: var(--white); padding: 0 10px; font-size: 12px; font-family: var(--sans); outline: none;
+}
+.tb-search::placeholder { color: rgba(255,255,255,0.25); }
+.tb-right { display: flex; align-items: center; gap: 10px; justify-content: flex-end; padding-right: 14px; }
+.tb-avatar {
+  width: 26px; height: 26px; border: 1px solid rgba(255,255,255,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+}
+
+/* ── LAYOUT ───────────────────────────────────────── */
+.layout { flex: 1; display: flex; overflow: hidden; }
+
+/* ── SIDEBAR ──────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-w); background: var(--g50);
+  border-right: 1px solid var(--g200);
+  display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden;
+}
+.sb-new {
+  margin: 12px 12px 8px; padding: 8px 12px;
+  background: var(--black); color: var(--white);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; text-align: center; cursor: default;
+}
+.sb-section { padding: 6px 0; }
+.sb-label { padding: 6px 14px 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--g500); }
+.sb-item {
+  display: flex; align-items: center; gap: 9px; padding: 6px 12px 6px 14px;
+  font-size: 12px; color: var(--g700); cursor: default;
+  border-left: 2px solid transparent;
+}
+.sb-item.active { border-left-color: var(--black); font-weight: 600; color: var(--black); background: var(--g100); }
+.sb-icon { font-size: 12px; width: 14px; text-align: center; flex-shrink: 0; }
+.sb-badge { margin-left: auto; font-size: 10px; font-weight: 700; background: var(--black); color: var(--white); padding: 1px 6px; min-width: 20px; text-align: center; }
+.sb-divider { height: 1px; background: var(--g200); margin: 6px 12px; }
+
+/* ── SCORE WIDGET (redesigned, prominent) ─────────── */
+.sb-scores { padding: 0 0 8px; border-top: 1px solid var(--g200); margin-top: auto; }
+.sb-scores-head {
+  padding: 10px 12px 8px;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--g500);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sb-scores-status {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--g400);
+}
+.sb-scores-status.alert { color: var(--black); }
+
+.score-indicator {
+  padding: 8px 12px 10px; border-top: 1px solid var(--g200);
+  position: relative; overflow: hidden;
+}
+.score-indicator.critical { background: var(--g100); }
+
+.score-ind-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px; }
+.score-ind-key {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--g600);
+}
+.score-ind-numwrap { display: flex; align-items: baseline; gap: 3px; position: relative; }
+.score-ind-num {
+  font-size: 42px; font-weight: 800; font-family: var(--mono); line-height: 1;
+  color: var(--black); transition: color 0.3s;
+}
+.score-ind-num.low { color: var(--g500); }
+.score-ind-num.pulse { animation: scorePulse 0.55s cubic-bezier(.22,1,.36,1); }
+@keyframes scorePulse {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.28); }
+  60%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+.score-ind-max { font-size: 13px; color: var(--g400); font-family: var(--mono); }
+
+.score-bar {
+  height: 11px; background: var(--g200); position: relative;
+}
+.score-fill {
+  height: 100%; background: var(--black);
+  transition: width 0.65s cubic-bezier(.4,0,.2,1);
+}
+.score-fill.low { background: var(--g500); }
+.score-fill.critical-fill { animation: critFlash 0.7s ease 4; }
+@keyframes critFlash { 0%,100%{background:var(--g400)} 50%{background:var(--black)} }
+
+/* Danger zone threshold line at 2/10 = 20% */
+.score-bar::after {
+  content: '';
+  position: absolute; left: 20%; top: -3px; bottom: -3px;
+  width: 2px; background: var(--g700);
+  opacity: 0.5; pointer-events: none;
+}
+
+/* Pressure note in sidebar */
+.sb-pressure {
+  padding: 8px 12px 10px; border-top: 1px solid var(--g200);
+  font-size: 9px; font-family: var(--mono); color: var(--g500);
+  letter-spacing: 0.06em; line-height: 1.6;
+}
+.sb-pressure strong { color: var(--black); font-weight: 700; }
+
+/* Floating delta */
+.score-delta {
+  position: absolute; right: -4px; top: -6px;
+  font-size: 15px; font-weight: 800; font-family: var(--mono);
+  pointer-events: none; z-index: 10;
+  animation: deltaFloat 1.8s ease forwards;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.score-delta.pos { color: var(--black); }
+.score-delta.neg { color: var(--g500); }
+@keyframes deltaFloat {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  15%  { opacity: 1; transform: translateY(-8px) scale(1.3); }
+  100% { opacity: 0; transform: translateY(-36px) scale(0.85); }
+}
+.score-status-line {
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--g400); margin-top: 6px; font-weight: 600;
+}
+.score-status-line.alert { color: var(--black); font-weight: 800; animation: alertPulse 1.5s ease infinite; }
+@keyframes alertPulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes dangerShake {
+  0%,100%{ transform:translateX(0) }
+  20%    { transform:translateX(-5px) }
+  40%    { transform:translateX(5px) }
+  60%    { transform:translateX(-3px) }
+  80%    { transform:translateX(3px) }
+}
+
+/* ── EMAIL LIST ───────────────────────────────────── */
+.email-list {
+  width: var(--list-w); background: var(--white);
+  border-right: 1px solid var(--g200);
+  display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden;
+}
+.el-header { padding: 12px 14px; border-bottom: 1px solid var(--g200); display: flex; align-items: baseline; gap: 8px; }
+.el-title { font-size: 14px; font-weight: 800; letter-spacing: -0.02em; }
+.el-count { font-size: 11px; color: var(--g400); }
+.el-body { flex: 1; overflow-y: auto; }
+
+.ei {
+  padding: 10px 14px 10px 20px; border-bottom: 1px solid var(--g100);
+  cursor: pointer; position: relative; transition: background 0.1s;
+}
+.ei:hover { background: var(--g50); }
+.ei.ei-active { background: var(--black); color: var(--white); }
+.ei.ei-locked { opacity: 0.25; pointer-events: none; }
+.ei.ei-unread::before {
+  content: ''; position: absolute; left: 7px; top: 50%; transform: translateY(-50%);
+  width: 5px; height: 5px; border-radius: 50%; background: var(--black);
+}
+.ei.ei-active.ei-unread::before { background: var(--white); }
+.ei-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; }
+.ei-from { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.ei-date { font-size: 10px; color: var(--g400); flex-shrink: 0; font-family: var(--mono); }
+.ei.ei-active .ei-date { color: rgba(255,255,255,0.4); }
+.ei-subject { font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ei.ei-unread .ei-subject { font-weight: 600; }
+.ei-preview { font-size: 11px; color: var(--g400); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ei.ei-active .ei-preview { color: rgba(255,255,255,0.4); }
+.ei-tags { display: flex; gap: 4px; margin-top: 6px; }
+.ei-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 1px 5px; border: 1px solid var(--g300); color: var(--g500); }
+.ei.ei-active .ei-tag { border-color: rgba(255,255,255,0.25); color: rgba(255,255,255,0.55); }
+.ei-tag.tag-event { border-color: var(--g700); color: var(--g700); }
+.ei.ei-active .ei-tag.tag-event { border-color: rgba(255,255,255,0.6); color: rgba(255,255,255,0.9); }
+.ei-tag.ei-tag-archive { border-color: var(--g200); color: var(--g300); letter-spacing: 0.06em; }
+.ei.ei-archived { opacity: 0.6; }
+.ei.ei-archived:hover { opacity: 1; }
+.ei.ei-archived .ei-subject { font-style: italic; }
+
+/* ── ARCHIVE READ PANE ────────────────────────────── */
+.arc-head { background: var(--g100); }
+.arc-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--g500); background: var(--g200);
+  padding: 2px 8px; margin-bottom: 12px;
+}
+.arc-label { color: var(--g400); font-style: italic; }
+.arc-check {
+  margin-left: auto; font-size: 16px; font-weight: 800; color: var(--black);
+  flex-shrink: 0;
+}
+.arc-dim { opacity: 0.3; pointer-events: none; }
+.arc-chosen {
+  border-color: var(--black) !important; border-width: 2px !important;
+  background: var(--g100); pointer-events: none;
+}
+.arc-read-note {
+  font-size: 12px; color: var(--g400); font-style: italic;
+  padding: 10px 0;
+}
+
+/* ── READING PANE ─────────────────────────────────── */
+.reading-pane { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--white); }
+.rp-head { padding: 20px 32px 16px; border-bottom: 1px solid var(--g200); flex-shrink: 0; }
+.rp-subject { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 14px; line-height: 1.2; }
+.rp-meta { display: flex; align-items: center; gap: 12px; }
+.rp-avatar {
+  width: 34px; height: 34px; background: var(--black); color: var(--white);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; flex-shrink: 0;
+}
+.rp-from-name { font-size: 13px; font-weight: 600; }
+.rp-from-addr { font-size: 11px; color: var(--g400); margin-top: 2px; }
+.rp-date { font-size: 11px; color: var(--g400); font-family: var(--mono); margin-left: auto; }
+.rp-body { flex: 1; overflow-y: auto; padding: 28px 32px 28px; }
+
+/* Content */
+.msg-body { max-width: 600px; }
+.msg-body p { font-size: 15px; line-height: 1.55; color: var(--g700); margin-bottom: 12px; }
+.msg-body p strong { color: var(--black); font-weight: 700; }
+.msg-body p em { font-style: italic; color: var(--g600); }
+.msg-sep { height: 1px; background: var(--g200); margin: 24px 0; }
+.choices-label { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--g400); margin-bottom: 12px; }
+.choices-grid { display: flex; flex-direction: column; gap: 8px; max-width: 580px; }
+
+.choice-btn {
+  display: flex; align-items: flex-start; gap: 14px; padding: 16px 16px;
+  border: 1px solid var(--g200); background: var(--white);
+  cursor: pointer; text-align: left; font-family: var(--sans);
+  transition: border-color 0.12s, background 0.12s;
+}
+.choice-btn:hover { border-color: var(--black); background: var(--g50); }
+.choice-btn.chosen { border-color: var(--black); background: var(--black); color: var(--white); pointer-events: none; }
+.choice-letter { font-size: 11px; font-weight: 700; font-family: var(--mono); width: 18px; flex-shrink: 0; padding-top: 2px; }
+.choice-content { flex: 1; }
+.choice-title { font-size: 15px; font-weight: 700; line-height: 1.35; }
+.choice-desc { font-size: 13px; color: var(--g500); margin-top: 4px; line-height: 1.55; }
+.choice-btn.chosen .choice-desc { color: rgba(255,255,255,0.5); }
+.choice-btn:hover:not(.chosen) .choice-desc { color: var(--g600); }
+.choice-effects { font-size: 11px; font-family: var(--mono); color: var(--g400); margin-top: 8px; letter-spacing: 0.04em; }
+.choice-btn.chosen .choice-effects { color: rgba(255,255,255,0.45); }
+.choice-btn:hover:not(.chosen) .choice-effects { color: var(--g600); }
+
+.btn-continue {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 28px; padding: 12px 24px;
+  background: var(--black); color: var(--white); border: none;
+  font-family: var(--sans); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-continue:hover { background: var(--g800); }
+.btn-continue:disabled { opacity: 0.45; cursor: not-allowed; background: var(--g700); }
+
+/* Event banner */
+.event-banner {
+  background: var(--black); color: var(--white);
+  padding: 18px 20px; margin-bottom: 24px; max-width: 580px;
+}
+.event-banner-tag {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgba(255,255,255,0.4); margin-bottom: 6px;
+}
+.event-banner-title { font-size: 17px; font-weight: 800; line-height: 1.3; }
+
+/* Anthropocene pressure banner */
+.pressure-banner {
+  font-size: 13px; font-family: var(--mono); color: var(--g600);
+  border: 1px solid var(--g300); border-left: 4px solid var(--g700);
+  padding: 10px 14px; margin-top: 20px; background: var(--g50);
+  line-height: 1.6; max-width: 580px;
+}
+.pressure-banner strong { color: var(--black); font-weight: 700; }
+
+/* Fade in */
+.fade-in { animation: fadeIn 0.28s ease forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── END SCREEN ───────────────────────────────────── */
+.endscreen {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 48px; text-align: center; overflow-y: auto;
+}
+.end-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--g400); margin-bottom: 16px; }
+.end-title { font-size: 38px; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 10px; line-height: 1.1; }
+.gameover-reason {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--g500); border: 1px solid var(--g200); padding: 5px 14px;
+  display: inline-block; margin-bottom: 22px;
+}
+.end-text { font-size: 15px; line-height: 1.8; color: var(--g600); max-width: 440px; margin-bottom: 36px; }
+.end-scores { display: flex; gap: 36px; margin-bottom: 36px; }
+.end-score-item { text-align: center; }
+.end-score-num { font-size: 40px; font-weight: 800; font-family: var(--mono); line-height: 1; }
+.end-score-num.low { color: var(--g400); }
+.end-score-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--g400); margin-top: 6px; }
+.end-divider { width: 40px; height: 1px; background: var(--g200); margin: 0 auto 32px; }
+.btn-restart {
+  padding: 12px 28px; background: var(--black); color: var(--white); border: none;
+  font-family: var(--sans); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+}
+.btn-restart:hover { background: var(--g800); }
+.btn-restart:disabled {
+  background: var(--g300);
+  color: var(--g500);
+  cursor: not-allowed;
+}
+.btn-restart-endnote {
+  margin-top: 10px;
+  min-width: 340px;
+  background: var(--white) !important;
+  border: 1px solid var(--g300);
+  color: var(--black) !important;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── TEMP DEBUG PANEL (hidden by default) ─────────── */
+#debug-jump {
+  position: fixed; left: 12px; bottom: 12px; z-index: 12000;
+  display: none; gap: 6px; align-items: center;
+  background: rgba(0,0,0,0.9); color: var(--white);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 8px 10px; font-family: var(--mono); font-size: 11px;
+}
+#debug-jump button {
+  border: 1px solid rgba(255,255,255,0.25);
+  background: transparent; color: var(--white);
+  padding: 4px 8px; cursor: pointer; font-family: var(--mono); font-size: 11px;
+}
+#debug-jump button:hover { background: rgba(255,255,255,0.12); }
+
+/* ══ SCORE PANEL (floating square bottom-right) ════════ */
+#score-panel {
+  position: fixed; bottom: 20px; right: 20px; z-index: 600;
+  width: 220px;
+  background: var(--black);
+  border: 1px solid var(--g700);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04);
+  padding: 18px 20px 16px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.sp-title {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.2em;
+  text-transform: uppercase; color: rgba(255,255,255,0.25);
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  margin-bottom: 0;
+}
+.sp-ind {
+  display: flex; flex-direction: column; gap: 5px;
+  position: relative;
+}
+.sp-ind.danger .sp-num { color: var(--g500); }
+.sp-key {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.14em;
+  text-transform: uppercase; color: rgba(255,255,255,0.35);
+}
+.sp-numrow { display: flex; align-items: baseline; gap: 4px; position: relative; }
+.sp-num {
+  font-size: 36px; font-weight: 800; font-family: var(--mono); line-height: 1;
+  color: var(--white); transition: color 0.3s;
+}
+.sp-num.pulse { animation: scorePulse 0.5s cubic-bezier(.22,1,.36,1); }
+.sp-max { display: none; }
+.sp-bar {
+  height: 3px; background: rgba(255,255,255,0.08); position: relative;
+}
+.sp-bar::after {
+  content: ''; position: absolute; left: 20%; top: -2px; bottom: -2px;
+  width: 1px; background: rgba(255,255,255,0.18);
+}
+.sp-fill {
+  height: 100%; background: var(--white);
+  transition: width 0.65s cubic-bezier(.4,0,.2,1);
+}
+.sp-fill.low { background: var(--g500); }
+.sp-status {
+  font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(255,255,255,0.18);
+}
+.sp-status.alert { color: rgba(255,255,255,0.7); animation: alertPulseW 1.5s ease infinite; }
+@keyframes alertPulseW { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+/* Delta in score panel */
+.sp-delta {
+  position: absolute; right: 0; top: 0;
+  font-size: 15px; font-weight: 800; font-family: var(--mono);
+  pointer-events: none;
+  animation: deltaFloat 1.8s ease forwards;
+}
+.sp-delta.pos { color: var(--white); }
+.sp-delta.neg { color: var(--g500); }
+
+/* shake on danger */
+.sp-ind.shake { animation: dangerShake 0.4s ease; }
+
+/* ══ CONTENT ANIMATIONS ════════════════════════════════ */
+.anim-item {
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 0.32s ease, transform 0.32s ease;
+}
+.anim-item.visible {
+  opacity: 1; transform: translateY(0);
+}
+
+/* ── EMAIL ARRIVAL ANIMATION ──────────────────────── */
+@keyframes emailArrive {
+  0%   { opacity: 0; transform: translateY(-22px) scaleY(0.92); }
+  65%  { opacity: 1; transform: translateY(3px) scaleY(1.01); }
+  100% { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+.ei-new-arrival {
+  animation: emailArrive 0.48s cubic-bezier(.22,1,.36,1) forwards;
+  transform-origin: top center;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--g300); }
+::-webkit-scrollbar-thumb:hover { background: var(--g400); }
+</style>
+</head>
+<body>
+
+<!-- ══ INTRO OVERLAY ══════════════════════════════════════ -->
+<div id="intro-overlay">
+  <div class="intro-inner">
+    <div class="intro-logo"></div>
+    <div class="intro-title">DERNIER ÉQUILIBRE<span class="intro-cursor"></span></div>
+    <div class="intro-sub">Une simulation dans l'Anthropocène</div>
+    <div class="intro-divider"></div>
+
+    <div class="intro-lore">
+      <p>Vous évoluez dans l'<strong>Anthropocène</strong> : une période où les activités humaines modifient profondément le système Terre. Les équilibres sont instables, interdépendants, soumis à des dynamiques qui dépassent votre contrôle direct.</p>
+      <div class="intro-lore-divider"></div>
+      <p>Vous êtes à la tête d'une <strong>grande entité</strong> capable d'influencer les ressources, les populations et l'environnement. Vos décisions auront des effets — mais elles s'inscrivent dans un système plus large.</p>
+      <p><em>Il n'y a pas de choix parfaits. Seulement des compromis.</em></p>
+    </div>
+
+    <div class="intro-stats">
+      <div class="intro-stat">
+        <div class="intro-stat-num">8</div>
+        <div class="intro-stat-bar"></div>
+        <div class="intro-stat-label">💰 Économie</div>
+      </div>
+      <div class="intro-stat">
+        <div class="intro-stat-num">8</div>
+        <div class="intro-stat-bar"></div>
+        <div class="intro-stat-label">🌿 Environnement</div>
+      </div>
+      <div class="intro-stat">
+        <div class="intro-stat-num">8</div>
+        <div class="intro-stat-bar"></div>
+        <div class="intro-stat-label">👥 Société</div>
+      </div>
+    </div>
+
+    <div class="intro-note">Si l'un des indicateurs atteint 0 — fin de partie</div>
+    <button class="intro-start" id="intro-start">
+      Ouvrir la boîte de réception
+      <span class="intro-start-arrow">→</span>
+    </button>
+  </div>
+</div>
+
+<!-- ══ NOTIFICATIONS ══════════════════════════════════════ -->
+<div id="notif-container"></div>
+<div id="debug-jump"></div>
+<div id="t12-alert-layer"></div>
+
+<!-- ══ APP ════════════════════════════════════════════════ -->
+<div id="app">
+
+  <header class="titlebar">
+    <div class="tb-logo">
+      <div class="tb-square"></div>
+      <span class="tb-name">Dernier Équilibre</span>
+    </div>
+    <input class="tb-search" type="text" placeholder="Rechercher dans les rapports…" readonly>
+    <div class="tb-right">
+      <div class="tb-avatar">DÉ</div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sb-new">＋ Nouveau rapport</div>
+      <div class="sb-section">
+        <div class="sb-label">Dossiers</div>
+        <div class="sb-item active">
+          <span class="sb-icon">📥</span> Boîte de réception
+          <span class="sb-badge" id="sb-unread">11</span>
+        </div>
+        <div class="sb-item"><span class="sb-icon">📤</span> Envoyés</div>
+        <div class="sb-item"><span class="sb-icon">🗂️</span> Archives</div>
+        <div class="sb-item"><span class="sb-icon">🗑️</span> Corbeille</div>
+      </div>
+      <div class="sb-divider"></div>
+      <div class="sb-section">
+        <div class="sb-label">Catégories</div>
+        <div class="sb-item"><span class="sb-icon">💼</span> Décisions</div>
+        <div class="sb-item"><span class="sb-icon">⚡</span> Événements</div>
+        <div class="sb-item"><span class="sb-icon">⚠️</span> Alertes</div>
+      </div>
+
+      <div class="sb-pressure">
+        ⚠ <strong>Pression systémique</strong><br>
+        Tours 1–4 : ENV −2<br>
+        Tours 5–7 : ENV −2 · SOC −1<br>
+        Tours 8–10 : ENV −1 · SOC −1 · ÉCO −1
+      </div>
+    </nav>
+
+    <!-- EMAIL LIST -->
+    <div class="email-list">
+      <div class="el-header">
+        <span class="el-title">Boîte de réception</span>
+        <span class="el-count" id="el-count">11 messages</span>
+      </div>
+      <div class="el-body" id="email-list-body"></div>
+    </div>
+
+    <!-- READING PANE -->
+    <main class="reading-pane" id="reading-pane"></main>
+
+  </div>
+
+  <!-- SCORE PANEL -->
+  <div id="score-panel">
+    <div class="sp-title">📊 Indicateurs</div>
+    <div class="sp-ind" id="spi-eco">
+      <div class="sp-key">💰 Économie</div>
+      <div class="sp-numrow" id="spnw-eco">
+        <span class="sp-num" id="spval-eco">8</span>
+        <span class="sp-max">/10</span>
+      </div>
+      <div class="sp-bar"><div class="sp-fill" id="spbar-eco" style="width:60%"></div></div>
+      <div class="sp-status" id="spst-eco">Stable</div>
+    </div>
+    <div class="sp-ind" id="spi-env">
+      <div class="sp-key">🌿 Environnement</div>
+      <div class="sp-numrow" id="spnw-env">
+        <span class="sp-num" id="spval-env">8</span>
+        <span class="sp-max">/10</span>
+      </div>
+      <div class="sp-bar"><div class="sp-fill" id="spbar-env" style="width:60%"></div></div>
+      <div class="sp-status" id="spst-env">Stable</div>
+    </div>
+    <div class="sp-ind" id="spi-soc">
+      <div class="sp-key">👥 Société</div>
+      <div class="sp-numrow" id="spnw-soc">
+        <span class="sp-num" id="spval-soc">8</span>
+        <span class="sp-max">/10</span>
+      </div>
+      <div class="sp-bar"><div class="sp-fill" id="spbar-soc" style="width:60%"></div></div>
+      <div class="sp-status" id="spst-soc">Stable</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  NOTIFICATION DATA
+// ══════════════════════════════════════════════════════════════
+
+const NOTIFICATIONS = [
+  { source: '🌊  SIGNAL OCÉANIQUE CONFIDENTIEL',     msg: 'Le Gulf Stream a ralenti de 15% depuis votre prise de poste. Aucune annonce officielle n\'est prévue.' },
+  { source: '📉  RÉVISION INTERNE DES PROJECTIONS',  msg: 'Les projections de croissance à 2050 ont été révisées à la baisse pour la 4ᵉ fois consécutive ce trimestre.' },
+  { source: '🏦  FUITE — SECTEUR ASSURANTIEL',       msg: 'Les assureurs refusent désormais de couvrir 11 nouvelles régions côtières. Information retenue jusqu\'au prochain conseil.' },
+  { source: '💧  ALERTE RESSOURCES EN EAU',           msg: '40% des aquifères mondiaux sont en déficit hydrique critique. Les chiffres officiels sous-estiment la situation.' },
+  { source: '👁️  ANALYSE COMPORTEMENTALE — VOUS',    msg: 'Vos décisions favorisent systématiquement un indicateur au détriment des deux autres. La tendance est statistiquement significative.' },
+  { source: '🌡️  NOTE TECHNIQUE — MODÉLISATION',     msg: 'Les modèles climatiques ne parviennent plus à reproduire les anomalies observées ces 18 derniers mois. Révision en cours.' },
+  { source: '💸  RAPPORT NON PUBLIÉ — MARCHÉS',      msg: '3 fonds souverains ont silencieusement liquidé leurs positions dans les zones à risque climatique élevé.' },
+  { source: '🔒  COMMUNICATION INTERNE CLASSIFIÉE',  msg: '« Les données ne correspondent plus à nos projections. » — Mémo interne, diffusion restreinte, non daté.' },
+  { source: '📢  TENDANCE — OPINION PUBLIQUE',        msg: 'La confiance envers les institutions économiques et environnementales atteint un plancher historique depuis 1946.' },
+  { source: '⚠️  ALERTE — LIMITES PLANÉTAIRES',      msg: 'Deux des neuf limites planétaires viennent d\'être franchies simultanément. Aucun précédent enregistré depuis 1950.' },
+  { source: '🧾  NOTE RH — RESSOURCES HUMAINES',     msg: 'Le taux de démission dans les agences environnementales gouvernementales a triplé en douze mois. Raisons non divulguées.' },
+  { source: '🌐  RAPPORT D\'AMBASSADE — CONFIDENTIEL',msg: '4 États riverains négocient secrètement l\'accès à des réserves d\'eau douce stratégiques. Les négociations sont avancées.' },
+  { source: '⏳  RAPPEL SYSTÈME — EFFETS DIFFÉRÉS',  msg: 'Certaines conséquences de vos actions ne sont pas encore visibles dans les indicateurs actuels. Délai estimé : 3 à 8 ans.' },
+  { source: '📝  MISE À JOUR SILENCIEUSE — ACCORDS', msg: 'Les objectifs climatiques du dernier accord international ont été assouplis sans communiqué officiel ni vote.' },
+  { source: '🚶  BULLETIN — MIGRATIONS HUMAINES',    msg: 'Activité migratoire hors modèles prédictifs détectée dans 3 régions. Corrélation avec vos décisions : non établie officiellement.' },
+  { source: '🗄️  ARCHIVÉ — SCÉNARIO SIMILAIRE',     msg: 'Ce scénario a déjà été simulé en 2031 par un groupe de travail interne. Les résultats n\'ont pas été divulgués au public.' },
+  { source: '⚖️  AVERTISSEMENT — RESPONSABILITÉ',    msg: 'Les effets à long terme de vos choix dépassent la durée de votre mandat. Aucun mécanisme de responsabilité institutionnelle n\'est prévu.' },
+  { source: '🔍  AUDIT — DIVERGENCE DES DONNÉES',    msg: 'Les indicateurs officiels divergent des données terrain depuis au moins 18 mois. Source : non attribuable. Audit interne suspendu.' },
+  { source: '🌿  SIGNAL — ZONES TAMPONS',            msg: 'Des zones tampons écologiques ont été silencieusement réduites de 23% sans révision du cadre légal applicable.' },
+  { source: '🦋  ALERTE BIODIVERSITÉ',               msg: '3 espèces indicatrices clés ont disparu de leur zone d\'habitat ce trimestre. Aucun rapport public n\'est prévu à ce stade.' },
+  { source: '📌  NOTE STRATÉGIQUE — VOS DÉCISIONS',  msg: 'Votre dernière décision a été enregistrée, archivée et transmise à des parties prenantes dont l\'identité n\'a pas été communiquée.' },
+  { source: '🔁  ANALYSE SYSTÉMIQUE — RÉTROACTION',  msg: '« Nous avons probablement sous-estimé les effets de rétroaction. Les marges d\'erreur sont devenues inopérantes. » — Mémo classé.' },
+  { source: '🏭  RAPPORT — ÉMISSIONS INDUSTRIELLES', msg: 'Les émissions déclarées par le secteur industriel sous-estiment les mesures satellitaires d\'un facteur 1,4. Données non corrigées.' },
+  { source: '💼  AUDIT FINANCIER — EXTERNALITÉS',    msg: 'Le coût réel des externalités environnementales non comptabilisées équivaut à 34% du PIB mondial. Chiffre non intégré aux bilans.' },
+];
+
+// Turn-specific triggered notifications
+const TURN_NOTIFICATIONS = {
+  'tour1': { source: '📌  JOURNAL DE DÉCISION — SYSTÈME', msg: 'Votre première décision a été enregistrée, horodatée et archivée. Elle ne peut pas être annulée.' },
+  'tour3': { source: '🏗️  ALERTE — TRAJECTOIRE RESSOURCES', msg: 'Analyse prédictive interne : la trajectoire actuelle des ressources n\'est pas soutenable au-delà de 2038 selon trois modèles indépendants.' },
+  'tour5': { source: '🔴  CELLULE DE CRISE — SEUILS', msg: 'Probabilité de franchissement d\'un seuil de basculement irréversible estimée à 67% dans les 10 prochaines années selon les modèles actuels.' },
+  'tour6': { source: '💥  ÉVÉNEMENT MAJEUR DÉTECTÉ', msg: 'Premier déséquilibre systémique confirmé. Aucune intervention directe n\'est possible à cette étape du processus.' },
+  'tour8': { source: '🏁  BILAN — DERNIER TOUR DE MANDAT', msg: 'C\'est votre dernière décision. Les conséquences structurelles de l\'ensemble de vos choix persisteront longtemps après votre départ.' },
+  'tour10': { source: '🧭  SURVEILLANCE — CONDITIONS INSTABLES', msg: 'Les repères opérationnels deviennent moins fiables. Les décisions locales produisent des effets inattendus à distance.' },
+  'tour11': { source: '⛑️  ALERTE — URGENCES MULTIPLES', msg: 'Plusieurs tensions apparaissent en parallèle. Les capacités d\'intervention simultanée sont insuffisantes.' },
+  'tour12': { source: '🛑  SEUILS FRANCHIS — SYSTÈME', msg: 'Plusieurs seuils sont franchis en même temps. Le système ne retrouve plus son équilibre.' },
+};
+
+// ══════════════════════════════════════════════════════════════
+//  GAME DATA
+// ══════════════════════════════════════════════════════════════
+
+const TURNS = [
+  {
+    id:'orientation', from:'Comité Stratégique', initials:'CS',
+    subject:'🧭 État initial — Choisissez votre orientation', date:'Tour 0',
+    preview:'Définissez la priorité qui guidera l\'ensemble de vos décisions.',
+    tag:'STRATÉGIE', type:'choice', heading:'État initial',
+    body:`<p>Les trois indicateurs démarrent à <strong>8</strong> chacun. La marge est étroite : si l'un d'eux atteint zéro, votre système s'effondre.</p>
+          <p>Choisissez l'orientation qui guidera vos décisions :</p>`,
+    choices:[
+      { letter:'A', title:'💰 Approche économique',  desc:'La croissance et la stabilité économique sont prioritaires.', effects:{economy:2,environment:-1,society:-1} },
+      { letter:'B', title:'🌿 Approche écologique',  desc:'La protection de l\'environnement est centrale.',            effects:{economy:-1,environment:2,society:-1} },
+      { letter:'C', title:'👥 Approche sociale',     desc:'Le bien-être de la population est prioritaire.',             effects:{economy:-1,environment:-1,society:2} }
+    ]
+  },
+  {
+    id:'tour1', from:'Département Analyses', initials:'DA',
+    subject:'📊 Tour 1 — Trajectoires initiales', date:'Tour 1',
+    preview:'La croissance passée a reposé sur une exploitation intensive des ressources.',
+    tag:'DÉCISION', type:'choice', heading:'Trajectoires initiales',
+    body:`<p>Vous prenez la direction de votre entité à un moment où le système Terre est déjà profondément modifié. La croissance économique passée a reposé sur une exploitation intensive des ressources et des énergies fossiles.</p>
+          <p>Aujourd'hui, les premiers signes de déséquilibre apparaissent : pressions sur les écosystèmes, inégalités sociales, dépendance aux infrastructures globales. Rien n'est encore en crise ouverte, mais les trajectoires actuelles ne sont pas soutenables.</p>
+          <p>Votre première décision va orienter la manière dont vous vous inscrivez dans cette dynamique.</p>`,
+    choices:[
+      { letter:'A', title:'📈 Accélérer la croissance économique',         desc:null, effects:{economy:2,environment:-1,society:1}  },
+      { letter:'B', title:'🌱 Réguler pour protéger l\'environnement',   desc:null, effects:{economy:-1,environment:2,society:1}  },
+      { letter:'C', title:'🤝 Renforcer le soutien social',              desc:null, effects:{economy:-1,environment:0,society:2}  },
+      { letter:'D', title:'⚖️ Compromis modéré',                         desc:null, effects:{economy:0,environment:0,society:1}   }
+    ]
+  },
+  {
+    id:'tour2', from:'Dép. Énergie & Climat', initials:'EC',
+    subject:'⚡ Tour 2 — Dépendance énergétique', date:'Tour 2',
+    preview:'Votre système dépend fortement des énergies fossiles.',
+    tag:'DÉCISION', type:'choice', heading:'Dépendance énergétique',
+    body:`<p>Vos premières décisions ont maintenu le système, mais n'ont pas changé ses fondements. Une contrainte structurelle devient visible : votre système dépend fortement de l'énergie.</p>
+          <p>Les infrastructures reposent encore largement sur des énergies fossiles, dont les coûts environnementaux et géopolitiques commencent à se faire sentir. Les alternatives existent, mais nécessitent temps et investissements.</p>
+          <p>Vous devez maintenant décider comment gérer cette dépendance.</p>`,
+    choices:[
+      { letter:'A', title:'🛢️ Consolider l\'accès aux énergies fossiles',  desc:'Sécuriser l\'approvisionnement, renforcer les partenariats.', effects:{economy:2,environment:-2,society:0}  },
+      { letter:'B', title:'☀️ Investir dans la transition énergétique',  desc:'Développer les renouvelables, amorcer la transformation.',    effects:{economy:-1,environment:2,society:0}  },
+      { letter:'C', title:'🔀 Stratégie hybride',                        desc:'Maintien des fossiles + développement des alternatives.',      effects:{economy:1,environment:-1,society:1}  },
+      { letter:'D', title:'🔋 Sobriété énergétique',                     desc:'Politiques de réduction de la demande et d\'efficacité.',      effects:{economy:-1,environment:1,society:-1} }
+    ]
+  },
+  {
+    id:'tour3', from:'Dép. Ressources', initials:'DR',
+    subject:'🏭 Tour 3 — Pression sur les ressources', date:'Tour 3',
+    preview:'Tensions sur l\'approvisionnement, dégradation des écosystèmes.',
+    tag:'DÉCISION', type:'choice', heading:'Pression sur les ressources',
+    body:`<p>Votre système fonctionne, mais il devient de plus en plus dépendant de flux constants de matières premières. L'extraction s'intensifie, souvent loin des lieux de consommation.</p>
+          <p>Certains signaux apparaissent : tensions sur l'approvisionnement, dégradation d'écosystèmes, dépendance à des régions instables. La demande continue d'augmenter, portée par la croissance et les besoins sociaux.</p>
+          <p>Comment sécuriser ces ressources tout en gérant leurs impacts ?</p>`,
+    choices:[
+      { letter:'A', title:'⛏️ Intensifier l\'extraction',           desc:'Augmenter l\'exploitation pour répondre à la demande.',      effects:{economy:2,environment:-3,society:-1} },
+      { letter:'B', title:'🌐 Diversifier les approvisionnements', desc:'Multiplier les sources pour réduire les risques.',           effects:{economy:1,environment:-1,society:1}  },
+      { letter:'C', title:'♻️ Économie circulaire',               desc:'Investir dans le recyclage et la réutilisation.',            effects:{economy:-1,environment:2,society:1}  },
+      { letter:'D', title:'📉 Réduire la consommation',           desc:'Imposer des limites à l\'utilisation des ressources.',       effects:{economy:-2,environment:2,society:-1} }
+    ]
+  },
+  {
+    id:'tour4', from:'Conseil Scientifique', initials:'SC',
+    subject:'🔍 Tour 4 — Signaux d\'alerte', date:'Tour 4',
+    preview:'Des scientifiques évoquent des seuils critiques sans retour.',
+    tag:'DÉCISION', type:'choice', heading:'Signaux d\'alerte',
+    body:`<p>Les effets de vos décisions commencent à se traduire par des changements perceptibles. Des territoires subissent des événements inhabituels, des écosystèmes réagissent de manière imprévisible.</p>
+          <p>Des scientifiques évoquent des <strong>seuils critiques</strong> qui pourraient être franchis sans retour en arrière. Ces signaux restent fragmentés, difficiles à interpréter, et souvent contestés.</p>
+          <p>Quelle place accorder à ces signaux dans vos décisions ?</p>`,
+    choices:[
+      { letter:'A', title:'🙈 Minimiser les signaux',                       desc:'Ces alertes sont incertaines. Poursuivre les priorités actuelles.',   effects:{economy:1,environment:-1,society:0}  },
+      { letter:'B', title:'🔬 Suivre les recommandations scientifiques',   desc:'Prendre au sérieux les signaux, adapter les décisions.',               effects:{economy:-1,environment:2,society:0}  },
+      { letter:'C', title:'📣 Gérer la perception publique',               desc:'Investir dans la communication pour maintenir la confiance.',          effects:{economy:1,environment:-1,society:1}  },
+      { letter:'D', title:'⏸️ Attendre plus de certitudes',                desc:'Posture prudente — retarder les décisions majeures.',                  effects:{economy:0,environment:-1,society:1}  }
+    ]
+  },
+  {
+    id:'tour5', from:'Cellule de Crise', initials:'CC',
+    subject:'🔴 Tour 5 — Seuils critiques', date:'Tour 5',
+    preview:'Les tensions convergent. Agir transforme le système, ne pas agir aussi.',
+    tag:'CRITIQUE', type:'choice', heading:'Seuils critiques',
+    body:`<p>Les tensions accumulées commencent à converger. Les signaux autrefois isolés deviennent plus fréquents et difficiles à ignorer : perturbations climatiques, instabilités économiques locales, contestations sociales.</p>
+          <p>Des experts évoquent la possibilité de franchir des <strong>seuils critiques</strong> au-delà desquels les dynamiques pourraient s'emballer. Votre entité est profondément intégrée dans ces systèmes.</p>
+          <p>Vous êtes face à une situation où <em>agir transforme le système</em>, mais ne pas agir le laisse évoluer vers quelque chose de moins contrôlable.</p>`,
+    choices:[
+      { letter:'A', title:'🏛️ Maintenir la stabilité coûte que coûte', desc:'Privilégier la continuité, éviter toute rupture.',                effects:{economy:2,environment:-2,society:-2} },
+      { letter:'B', title:'🌀 Transformation profonde',                desc:'Accepter des perturbations pour réorienter le système.',          effects:{economy:-2,environment:3,society:1}  },
+      { letter:'C', title:'🔧 Adaptation progressive',                 desc:'Tenter d\'ajuster le système sans le bouleverser.',               effects:{economy:0,environment:1,society:1}   },
+      { letter:'D', title:'🕐 Reporter les décisions critiques',       desc:'Éviter les conséquences immédiates — les coûts s\'accumulent.',   effects:{economy:2,environment:-2,society:0}  }
+    ]
+  },
+  {
+    id:'tour6', from:'Système Terre', initials:'ST',
+    subject:'💥 Événement — Premier déséquilibre majeur', date:'Tour 6',
+    preview:'Un premier déséquilibre majeur survient sans possibilité d\'intervention.',
+    tag:'ÉVÉNEMENT', type:'auto_event', heading:'Premier déséquilibre majeur'
+  },
+  {
+    id:'tour7', from:'Bureau de Direction', initials:'BD',
+    subject:'🔄 Tour 7 — Réagir à l\'événement', date:'Tour 7',
+    preview:'Choisissez comment répondre au déséquilibre qui vient de se produire.',
+    tag:'RÉACTION', type:'event_response', heading:'Réagir à l\'événement'
+  },
+  {
+    id:'tour8', from:'Département Stratégie', initials:'DS',
+    subject:'🔮 Tour 8 — Vivre avec les transformations', date:'Tour 8',
+    preview:'S\'adapter à un système qui a fondamentalement changé.',
+    tag:'DÉCISION', type:'choice', heading:'Vivre avec les transformations',
+    body:`<p>Les ajustements mis en place ont stabilisé partiellement la situation, sans rétablir les conditions initiales. Le système fonctionne désormais dans un état différent : certaines contraintes se sont installées durablement.</p>
+          <p>Les décisions passées continuent de produire leurs effets. Il ne s'agit plus seulement de répondre à un événement, mais de <strong>s'adapter à un système qui a changé</strong>.</p>
+          <p>Comment évoluer dans ce nouveau contexte ?</p>`,
+    choices:[
+      { letter:'A', title:'⚙️ Optimiser le système existant',   desc:'Améliorer l\'efficacité sans modifier les fondements.',            effects:{economy:1,environment:-1,society:1}  },
+      { letter:'B', title:'🌬️ Réduire les pressions globales', desc:'Ralentir certaines activités pour diminuer les tensions.',         effects:{economy:-1,environment:1,society:-1} },
+      { letter:'C', title:'🔄 Redistribuer les coûts',          desc:'Ajuster la répartition des ressources entre acteurs.',             effects:{economy:0,environment:-1,society:1}  },
+      { letter:'D', title:'🤞 Maintenir l\'équilibre fragile',  desc:'Éviter toute décision forte pour préserver la stabilité précaire.',effects:{economy:-1,environment:-1,society:1} }
+    ]
+  },
+  {
+    id:'tour9', from:'Cellule Anticipation', initials:'CA',
+    subject:'🧩 Tour 9 — Gérer un système qui ne revient pas', date:'Tour 9',
+    preview:'Limiter la dégradation dans un système devenu instable.',
+    tag:'DÉCISION', type:'choice', heading:'Gérer un système qui ne revient pas',
+    body:`<p>Malgré vos tentatives d'ajustement, le système ne retrouve pas son fonctionnement d'avant. Les perturbations passées continuent d'avoir des effets : certaines activités restent fragiles, des tensions persistent, et les équilibres exigent de plus en plus d'efforts.</p>
+          <p>Vos décisions produisent désormais des effets décalés : agir sur un domaine peut en déstabiliser un autre, parfois sans lien apparent immédiat.</p>
+          <p>Vous devez décider où concentrer vos efforts.</p>`,
+    choices:[
+      { letter:'A', title:'🛟 Soutenir les secteurs les plus fragiles', desc:'Concentrer les ressources sur les points de rupture immédiats.', effects:{economy:1,environment:-1,society:1}  },
+      { letter:'B', title:'✂️ Réduire les activités les plus instables', desc:'Limiter les activités trop risquées ou trop dépendantes.',        effects:{economy:-1,environment:1,society:-1} },
+      { letter:'C', title:'🏗️ Réorganiser en profondeur',                desc:'Modifier l\'organisation du système pour l\'adapter.',          effects:{economy:-1,environment:1,society:1}  },
+      { letter:'D', title:'⚖️ Maintenir l\'équilibre actuel',            desc:'Ajuster sans changer la structure globale.',                   effects:{economy:1,environment:-1,society:0}  }
+    ]
+  },
+  {
+    id:'tour10', from:'Réseau Terrain', initials:'RT',
+    subject:'🌍 Tour 10 — Conditions qui changent', date:'Tour 10',
+    preview:'Les repères locaux deviennent moins prévisibles.',
+    tag:'DÉCISION', type:'choice', heading:'Conditions qui changent',
+    body:`<p>Dans plusieurs régions, certaines conditions deviennent moins prévisibles : les saisons ne suivent plus tout à fait les rythmes habituels, certains territoires deviennent plus difficiles à exploiter, et les activités demandent des ajustements constants.</p>
+          <p>Rien n'est totalement bloqué, mais le fonctionnement ordinaire s'érode. Les acteurs sur le terrain signalent des difficultés croissantes à planifier.</p>
+          <p>Vous devez vous adapter à ces nouvelles conditions.</p>`,
+    choices:[
+      { letter:'A', title:'🛠️ Adapter les activités',             desc:'Modifier les pratiques pour continuer à fonctionner.',              effects:{economy:0,environment:1,society:1}  },
+      { letter:'B', title:'🚚 Déplacer certaines activités',      desc:'Transférer des opérations vers des zones plus favorables.',       effects:{economy:1,environment:-1,society:0} },
+      { letter:'C', title:'📉 Réduire les exigences',             desc:'Accepter une performance plus faible mais plus robuste.',         effects:{economy:-1,environment:0,society:1} },
+      { letter:'D', title:'🧱 Maintenir les pratiques actuelles', desc:'Conserver l\'organisation malgré les difficultés.',               effects:{economy:1,environment:-1,society:-1}}
+    ]
+  },
+  {
+    id:'tour11', from:'Coordination de Crise', initials:'CR',
+    subject:'🚨 Tour 11 — Plusieurs urgences en même temps', date:'Tour 11',
+    preview:'Vous ne pouvez pas intervenir partout à la fois.',
+    tag:'CRITIQUE', type:'choice', heading:'Plusieurs urgences en même temps',
+    body:`<p>Les conditions instables rendent certaines situations plus difficiles à contenir. En peu de temps, plusieurs problèmes apparaissent en parallèle : activités perturbées, tensions sociales, zones de plus en plus difficiles à gérer.</p>
+          <p>Chacune de ces situations pourrait être gérée isolément, mais elles surviennent en même temps.</p>
+          <p>Vous devez choisir où agir en priorité.</p>`,
+    choices:[
+      { letter:'A', title:'🏭 Intervenir là où l\'activité est menacée',   desc:'Priorité au maintien des activités et des flux.',                  effects:{economy:1,environment:-1,society:-1} },
+      { letter:'B', title:'🫂 Intervenir là où les tensions montent',      desc:'Priorité aux zones où la situation sociale se dégrade.',           effects:{economy:-1,environment:-1,society:1} },
+      { letter:'C', title:'🌿 Intervenir là où les conditions se dégradent',desc:'Priorité aux milieux les plus proches du seuil de rupture.',       effects:{economy:-1,environment:1,society:-1} }
+    ]
+  },
+  {
+    id:'tour12', from:'Système Terre', initials:'ST',
+    subject:'🛑 Tour 12 — Seuils franchis ensemble', date:'Tour 12',
+    preview:'Le système ne retrouve plus sa stabilité.',
+    tag:'FIN', type:'forced_end', heading:'Seuils franchis ensemble',
+    body:`<p>Pendant un temps, vous avez encore pu croire qu'il restait possible de compenser : déplacer une activité, protéger un secteur, soutenir une population, absorber un choc ici pour éviter une rupture là.</p>
+          <p>Mais les déséquilibres accumulés ne fonctionnent plus séparément.</p>
+          <p>Ce n'est pas une catastrophe unique. C'est un système devenu incapable de retrouver sa stabilité.</p>
+          <p>Chaque intervention arrive dans un monde déjà transformé par les effets cumulés des décisions passées, des inerties techniques, des intérêts divergents et de limites biophysiques désormais plus visibles.</p>
+          <p>Aucune institution seule ne peut rétablir l'équilibre.<br>
+          Aucun marché seul ne peut absorber ces pertes.<br>
+          Aucune politique isolée ne peut répondre simultanément à la dégradation des milieux, à l'instabilité économique et aux fractures sociales.<br>
+          Aucun individu seul, quelle que soit sa volonté, ne peut infléchir cette trajectoire à l'échelle nécessaire.</p>
+          <p>L'Anthropocène n'est pas un événement.<br>
+          C'est la condition dans laquelle vous jouez depuis le début.</p>
+          <p>Vous n'avez pas perdu parce que vous avez échoué à faire un choix parfait. Vous avez perdu parce qu'un système fondé sur l'extraction, la croissance sans borne, l'inégalité des coûts et le dépassement progressif des limites planétaires ne peut plus être stabilisé par une action fragmentée, même si cette action vient d'une entité plus grande que le seul individu.</p>`
+  }
+];
+
+const AUTO_EVENTS = {
+  economy: {
+    label:'Perturbation économique',
+    heading:'Perturbation économique systémique',
+    body:`<p>Votre système reste performant, mais il dépend d'un réseau global dont vous ne maîtrisez pas toutes les dynamiques. Des déséquilibres apparaissent dans les échanges et les chaînes d'approvisionnement.</p>
+          <p>Certains flux de ressources deviennent irréguliers, les coûts augmentent, et plusieurs secteurs subissent des ralentissements. Cette situation révèle la dépendance à des systèmes complexes et interconnectés.</p>`,
+    effects:{economy:-3,society:-1}
+  },
+  environment: {
+    label:'Dégradation environnementale',
+    heading:'Dégradation environnementale amplifiée',
+    body:`<p>Malgré les efforts engagés, certains processus dépassent désormais l'échelle de votre action. Plusieurs phénomènes environnementaux s'intensifient simultanément.</p>
+          <p>Des périodes de chaleur prolongées, des sécheresses et des perturbations des écosystèmes commencent à affecter directement les activités humaines : production agricole instable, tensions sur l'eau, dégradation des milieux naturels.</p>`,
+    effects:{environment:-3,society:-1}
+  },
+  society: {
+    label:'Tensions sociales',
+    heading:'Tensions sociales généralisées',
+    body:`<p>Les transformations en cours ne se distribuent pas de manière uniforme. Les effets des décisions passées commencent à être ressentis de manière inégale entre les populations.</p>
+          <p>Des tensions apparaissent entre groupes sociaux. Des mobilisations émergent, remettant en question certaines décisions et fragilisant la cohésion sociale.</p>`,
+    effects:{society:-3,economy:-1}
+  }
+};
+
+const EVENT_RESPONSES = {
+  economy: {
+    body:`<p>La perturbation économique a fragilisé plusieurs secteurs. Vous devez décider comment intervenir pour rétablir la stabilité.</p>`,
+    choices:[
+      { letter:'A', title:'💸 Intervention massive',         desc:'Mobiliser des ressources importantes pour relancer l\'activité.',    effects:{economy:2,society:1,environment:-1} },
+      { letter:'B', title:'🏗️ Réorganisation progressive', desc:'Adapter les structures pour plus de résilience.',                   effects:{economy:1,environment:1,society:0}  },
+      { letter:'C', title:'🩹 Ajustement limité',           desc:'Stabiliser sans transformation majeure.',                           effects:{economy:1,environment:-1,society:0} }
+    ]
+  },
+  environment: {
+    body:`<p>La dégradation environnementale s'amplifie au-delà des seuils habituels. Vous devez décider comment répondre à cette situation.</p>`,
+    choices:[
+      { letter:'A', title:'🌳 Action environnementale forte',  desc:'Mesures ambitieuses pour limiter les impacts et restaurer.',       effects:{environment:2,economy:-1,society:-1} },
+      { letter:'B', title:'🔧 Adaptation progressive',        desc:'Ajustements pour réduire les impacts sans transformation radicale.', effects:{environment:1,society:1,economy:0}  },
+      { letter:'C', title:'🎯 Mesures ciblées limitées',      desc:'Intervenir ponctuellement sur les effets les plus visibles.',     effects:{environment:1,economy:1,society:-1}  }
+    ]
+  },
+  society: {
+    body:`<p>Les tensions sociales ont fragilisé la cohésion. Des mobilisations expriment des attentes contradictoires. Vous devez rétablir un équilibre social suffisant.</p>`,
+    choices:[
+      { letter:'A', title:'🤲 Renforcement massif des politiques sociales',  desc:'Mobiliser des ressources importantes pour réduire les inégalités.',  effects:{society:3,economy:-1,environment:0} },
+      { letter:'B', title:'🗣️ Ajustement progressif et dialogue',          desc:'Mesures graduelles et mécanismes de concertation.',                  effects:{society:2,environment:0,economy:0}  },
+      { letter:'C', title:'🎯 Réponse ciblée et limitée',                  desc:'Intervenir sur les situations les plus visibles.',                   effects:{society:1,economy:1,environment:0}  }
+    ]
+  }
+};
+
+const TOUR12_ALERTS = [
+  {
+    type: '🟥 BREAKING NEWS — FIL MONDIAL',
+    title: 'ALERTE — VAGUE DE CHALEUR',
+    body: [
+      'Des temperatures records frappent simultanement plusieurs regions deja sous tension.',
+      'Des incendies incontrôlables sont signales dans differentes zones vulnerables.',
+      'Certaines regions sont declarees temporairement inhabitables.'
+    ]
+  },
+  {
+    type: '🟥 BREAKING NEWS — FIL MONDIAL',
+    title: 'URGENT — CRISE HYDRIQUE',
+    body: [
+      'Des secheresses prolongees perturbent fortement la production agricole dans plusieurs pays.',
+      'Baisse significative des rendements observee sur plusieurs saisons consecutives.'
+    ]
+  },
+  {
+    type: '🟥 BREAKING NEWS — FIL MONDIAL',
+    title: 'URGENT — EVENEMENTS EXTREMES',
+    body: [
+      'Des precipitations inhabituelles endommagent les infrastructures.',
+      'Reseaux de transport et logistique fortement perturbes.',
+      'Interruptions dans les cycles de production.'
+    ]
+  },
+  {
+    type: '🟨 ACTUALITE ECONOMIQUE',
+    title: 'MARCHES SOUS PRESSION',
+    body: [
+      'Hausse generalisee des couts liee a l\'instabilite des flux.',
+      'Certaines compagnies d\'assurance suspendent leurs couvertures dans les zones a haut risque.',
+      'Plusieurs echanges commerciaux ralentissent ou sont interrompus.'
+    ]
+  },
+  {
+    type: '🟦 ALERTE HUMANITAIRE',
+    title: 'DEPLACEMENTS DE POPULATION',
+    body: [
+      'Augmentation des mouvements migratoires, internes et internationaux.',
+      'Des tensions locales emergent autour de la distribution des ressources.',
+      'Les autorites peinent a gerer plusieurs crises simultanees.'
+    ]
+  },
+  {
+    type: '🟪 NOTE INTERNE — SYSTEME GLOBAL',
+    title: 'Objet : Etat des reseaux',
+    body: [
+      'Les infrastructures et systemes d\'echange sont sous forte pression.',
+      'Les perturbations ne sont plus isolees : plusieurs zones cles sont touchees en meme temps.',
+      'Les modeles actuels ne prennent pas en compte cette simultaneite.',
+      'Aucune zone stable ne permet desormais de compenser les pertes.'
+    ]
+  },
+  {
+    type: '🟫 MAIL URGENT — COORDINATION DES RESSOURCES',
+    title: 'Objet : Reallocation des flux',
+    body: [
+      'Les ressources sont redirigees vers les zones les plus critiques.',
+      'Les priorites ont ete mises a jour.',
+      'Chaque intervention de stabilisation genere de nouvelles instabilites ailleurs.'
+    ]
+  },
+  {
+    type: '⬛ ALERTE SYSTEMIQUE',
+    title: 'ETAT DU SYSTEME',
+    body: [
+      'Les reponses sont actives mais non coordonnees.',
+      'Les decisions locales produisent des effets secondaires imprevus.',
+      'La capacite globale de compensation diminue.'
+    ]
+  }
+];
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+
+const state = {
+  economy:8, environment:8, society:8,
+  currentIdx:0,
+  viewIdx:0,
+  history:{},
+  readTurns: new Set(),
+  eventType: null,
+  gameOver: false, gameOverReason: null, gameWon: false,
+  MAX: 10,
+  gameStarted: false,
+  newArrival: false,
+  tour12AlertsDone: false,
+  tour12AlertIndex: 0
+};
+
+// Per-turn systemic pressure applied automatically after player's choice
+const TURN_PRESSURE = {
+  tour1:  {environment:-1},
+  tour2:  {environment:-1},
+  tour3:  {environment:-1},
+  tour4:  {environment:-1},
+  tour5:  {environment:-1, society:-1},
+  tour6:  {environment:-1, society:-1},
+  tour7:  {environment:-1, society:-1},
+  tour8:  {environment:-1, society:-1, economy:-1},
+  tour9:  {environment:-1, society:-1, economy:-1},
+  tour10: {environment:-1, society:-1, economy:-1},
+  tour11: {environment:-1, society:-1, economy:-1},
+};
+
+// ══════════════════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════════════════
+
+function stripEmoji(str) {
+  if (!str) return str;
+  return str.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').replace(/\s{2,}/g, ' ').trim();
+}
+
+function fmt(effects) {
+  const map = {economy:'ÉCO', environment:'ENV', society:'SOC'};
+  return Object.entries(effects)
+    .filter(([,v]) => v !== 0)
+    .map(([k,v]) => `${map[k]} ${v>0?'+':''}${v}`)
+    .join('  ·  ');
+}
+function clamp(v,mn,mx){ return Math.max(mn,Math.min(mx,v)); }
+
+// ══════════════════════════════════════════════════════════════
+//  SCORE UI
+// ══════════════════════════════════════════════════════════════
+
+function statusText(v) {
+  if (v <= 1)  return { text:'⚠ CRITIQUE', alert:true };
+  if (v <= 3)  return { text:'Fragilisé', alert:true };
+  if (v <= 6)  return { text:'Stable', alert:false };
+  return              { text:'Solide', alert:false };
+}
+
+function updateScores(prev) {
+  const data = [
+    { key:'eco', val:state.economy,     numId:'spval-eco', barId:'spbar-eco', nwId:'spnw-eco', siId:'spi-eco', stId:'spst-eco' },
+    { key:'env', val:state.environment, numId:'spval-env', barId:'spbar-env', nwId:'spnw-env', siId:'spi-env', stId:'spst-env' },
+    { key:'soc', val:state.society,     numId:'spval-soc', barId:'spbar-soc', nwId:'spnw-soc', siId:'spi-soc', stId:'spst-soc' },
+  ];
+
+  data.forEach(d => {
+    const numEl = document.getElementById(d.numId);
+    const barEl = document.getElementById(d.barId);
+    const stEl  = document.getElementById(d.stId);
+    const siEl  = document.getElementById(d.siId);
+    const nwEl  = document.getElementById(d.nwId);
+    if (!numEl) return;
+
+    numEl.textContent = d.val;
+    barEl.style.width = (d.val / state.MAX * 100) + '%';
+    barEl.classList.toggle('low', d.val <= 3);
+    numEl.classList.toggle('low', d.val <= 3);
+    siEl.classList.toggle('danger', d.val <= 3);
+
+    const st = statusText(d.val);
+    stEl.textContent = st.text;
+    stEl.classList.toggle('alert', st.alert);
+
+    if (prev !== undefined) {
+      const oldVal = d.key === 'eco' ? prev.economy : d.key === 'env' ? prev.environment : prev.society;
+      const delta = d.val - oldVal;
+      if (delta !== 0) {
+        numEl.classList.remove('pulse');
+        void numEl.offsetWidth;
+        numEl.classList.add('pulse');
+        showDelta(d.nwId, delta);
+      }
+      // Shake when entering danger zone
+      if (d.val <= 3 && oldVal > 3) {
+        siEl.classList.remove('shake');
+        void siEl.offsetWidth;
+        siEl.classList.add('shake');
+      }
+    }
+  });
+
+  const available = state.currentIdx + 1;
+  const unread = available - state.readTurns.size;
+  document.getElementById('sb-unread').textContent = unread > 0 ? unread : 0;
+  const countEl = document.getElementById('el-count');
+  if (countEl) countEl.textContent = available + (available === 1 ? ' message' : ' messages');
+}
+
+function showDelta(nwId, delta) {
+  const nw = document.getElementById(nwId);
+  if (!nw) return;
+  nw.querySelectorAll('.sp-delta').forEach(el => el.remove());
+  const el = document.createElement('span');
+  el.className = 'sp-delta ' + (delta > 0 ? 'pos' : 'neg');
+  el.textContent = (delta > 0 ? '+' : '') + delta;
+  nw.appendChild(el);
+  setTimeout(() => el.remove(), 1900);
+}
+
+// ── CONTENT ANIMATION ─────────────────────────────────
+function animateContent() {
+  const pane = document.getElementById('reading-pane');
+  if (!pane) return;
+
+  // Header
+  const head = pane.querySelector('.rp-head');
+  if (head) {
+    head.style.opacity = '0';
+    head.style.transform = 'translateY(-6px)';
+    head.style.transition = 'opacity 0.28s ease, transform 0.28s ease';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      head.style.opacity = '1'; head.style.transform = 'translateY(0)';
+    }));
+  }
+
+  // Body elements — staggered
+  const body = pane.querySelector('.msg-body');
+  if (!body) return;
+
+  const targets = [
+    ...body.querySelectorAll('.event-banner'),
+    ...body.querySelectorAll('p'),
+    ...body.querySelectorAll('.pressure-banner'),
+    ...body.querySelectorAll('.msg-sep'),
+    ...body.querySelectorAll('.choices-label'),
+    ...body.querySelectorAll('.choice-btn'),
+    ...body.querySelectorAll('.btn-continue'),
+  ];
+
+  targets.forEach((el, i) => {
+    el.classList.add('anim-item');
+    setTimeout(() => el.classList.add('visible'), 80 + i * 65);
+  });
+}
+
+function applyEffects(effects) {
+  const prev = { economy: state.economy, environment: state.environment, society: state.society };
+  if (effects.economy     !== undefined) state.economy     = clamp(state.economy     + effects.economy,     0, state.MAX);
+  if (effects.environment !== undefined) state.environment = clamp(state.environment + effects.environment, 0, state.MAX);
+  if (effects.society     !== undefined) state.society     = clamp(state.society     + effects.society,     0, state.MAX);
+  updateScores(prev);
+  return checkGameOver();
+}
+
+function getEventType() {
+  const m = Math.max(state.economy, state.environment, state.society);
+  if (state.economy === m)     return 'economy';
+  if (state.environment === m) return 'environment';
+  return 'society';
+}
+
+function checkGameOver() {
+  if (state.economy     <= 0) { state.gameOver = true; state.gameOverReason = 'economy';     return true; }
+  if (state.environment <= 0) { state.gameOver = true; state.gameOverReason = 'environment'; return true; }
+  if (state.society     <= 0) { state.gameOver = true; state.gameOverReason = 'society';     return true; }
+  return false;
+}
+
+// Update bar danger line position dynamically based on MAX
+function updateDangerLines() {
+  const pct = (2 / state.MAX * 100).toFixed(1) + '%';
+  document.querySelectorAll('.score-bar').forEach(bar => {
+    bar.style.setProperty('--danger-pct', pct);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  NOTIFICATION SYSTEM
+// ══════════════════════════════════════════════════════════════
+
+let notifPool = [...NOTIFICATIONS];
+let notifIndex = 0;
+let notifTimer = null;
+const NOTIF_DURATION = 9000; // ms before auto-dismiss
+
+function showNotif(source, msg) {
+  const container = document.getElementById('notif-container');
+  // Max 3 visible
+  if (container.children.length >= 3) return;
+
+  const card = document.createElement('div');
+  card.className = 'notif-card';
+
+  card.innerHTML = `
+    <div class="notif-header">
+      <span class="notif-source">${source}</span>
+      <button class="notif-close" title="Fermer">×</button>
+    </div>
+    <div class="notif-top">
+      <div class="notif-text">${msg}</div>
+    </div>
+  `;
+
+  container.appendChild(card);
+
+  // Auto dismiss
+  const timer = setTimeout(() => dismissNotif(card), NOTIF_DURATION);
+
+  card.querySelector('.notif-close').addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearTimeout(timer);
+    dismissNotif(card);
+  });
+}
+
+function dismissNotif(card) {
+  card.classList.add('notif-hiding');
+  setTimeout(() => { if (card.parentNode) card.parentNode.removeChild(card); }, 320);
+}
+
+function showNextRandomNotif() {
+  if (!state.gameStarted || state.gameOver || state.gameWon) return;
+  if (notifPool.length === 0) notifPool = [...NOTIFICATIONS];
+  const n = notifPool.splice(Math.floor(Math.random() * notifPool.length), 1)[0];
+  showNotif(n.source, n.msg);
+  scheduleNextNotif();
+}
+
+function scheduleNextNotif() {
+  clearTimeout(notifTimer);
+  const delay = 22000 + Math.random() * 20000; // 22–42 seconds
+  notifTimer = setTimeout(showNextRandomNotif, delay);
+}
+
+function triggerTurnNotif(turnId) {
+  const n = TURN_NOTIFICATIONS[turnId];
+  if (n) setTimeout(() => showNotif(n.source, n.msg), 1800);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  EMAIL LIST
+// ══════════════════════════════════════════════════════════════
+
+function renderEmailList() {
+  const body = document.getElementById('email-list-body');
+  body.innerHTML = '';
+
+  for (let i = TURNS.length - 1; i >= 0; i--) {
+    const t = TURNS[i];
+    const isActive  = i === state.viewIdx;
+    const isRead    = state.readTurns.has(t.id);
+    const isCurrent = i === state.currentIdx;
+    const isLocked  = i > state.currentIdx;
+    const isUnread  = !isRead && !isLocked;
+    const isArchived = i < state.currentIdx;
+
+    if (isLocked) continue;
+
+    const isNewArrival = state.newArrival && i === state.currentIdx;
+    const div = document.createElement('div');
+    div.className = 'ei' +
+      (isActive      ? ' ei-active'      : '') +
+      (isUnread      ? ' ei-unread'      : '') +
+      (isArchived    ? ' ei-archived'    : '') +
+      (isNewArrival  ? ' ei-new-arrival' : '');
+    div.dataset.idx = i;
+
+    let tagHtml = '';
+    if (t.tag) {
+      const isEvent = t.tag === 'ÉVÉNEMENT' || t.tag === 'CRITIQUE';
+      tagHtml = `<div class="ei-tags"><span class="ei-tag${isEvent?' tag-event':''}">${t.tag}</span></div>`;
+    }
+    const archiveTag = isArchived
+      ? `<div class="ei-tags"><span class="ei-tag ei-tag-archive">✓ archivé</span></div>`
+      : '';
+
+    div.innerHTML = `
+      <div class="ei-top">
+        <span class="ei-from">${t.from}</span>
+        <span class="ei-date">${t.date}</span>
+      </div>
+      <div class="ei-subject">${stripEmoji(t.subject)}</div>
+      <div class="ei-preview">${t.preview}</div>
+      ${tagHtml}${archiveTag}
+    `;
+
+    if (!isLocked) {
+      div.addEventListener('click', () => {
+        state.viewIdx = i;
+        renderEmailList();
+        renderReadingPane();
+      });
+    }
+
+    body.appendChild(div);
+  }
+
+  const active = body.querySelector('.ei-active');
+  if (active) active.scrollIntoView({ block: 'nearest' });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  READING PANE
+// ══════════════════════════════════════════════════════════════
+
+function renderReadingPane() {
+  const pane = document.getElementById('reading-pane');
+
+  if (state.gameOver) { renderEndScreen(pane, false); return; }
+  if (state.gameWon)  { renderEndScreen(pane, true);  return; }
+
+  // If viewing a past (completed) turn, show archive
+  if (state.viewIdx < state.currentIdx) {
+    renderArchivedPane(pane, TURNS[state.viewIdx]);
+    return;
+  }
+
+  const turn = TURNS[state.currentIdx];
+  state.readTurns.add(turn.id);
+  renderEmailList();
+
+  let content = '';
+  if      (turn.type === 'info')           content = buildInfoPane(turn);
+  else if (turn.type === 'choice')         content = buildChoicePane(turn, turn.choices);
+  else if (turn.type === 'auto_event')     content = buildAutoEventPane(turn);
+  else if (turn.type === 'event_response') content = buildEventResponsePane(turn);
+  else if (turn.type === 'forced_end')     content = buildForcedEndPane(turn);
+
+  const addr = turn.from.toLowerCase()
+    .replace(/['\s]/g,'.').replace(/[éèê]/g,'e').replace(/[â]/g,'a')
+    .replace(/[ô]/g,'o').replace(/[î]/g,'i').replace(/[ùû]/g,'u')
+    .replace(/[ç]/g,'c').replace(/[à]/g,'a').replace(/[&]/g,'');
+
+  pane.innerHTML = `
+    <div class="rp-head">
+      <div class="rp-subject">${stripEmoji(turn.subject)}</div>
+      <div class="rp-meta">
+        <div class="rp-avatar">${turn.initials}</div>
+        <div>
+          <div class="rp-from-name">${turn.from}</div>
+          <div class="rp-from-addr">${addr}@systemeterre.int</div>
+        </div>
+        <div class="rp-date">${turn.date}</div>
+      </div>
+    </div>
+    <div class="rp-body">
+      <div class="msg-body">${content}</div>
+    </div>
+  `;
+
+  attachActions(pane, turn);
+  animateContent();
+}
+
+function buildInfoPane(turn) {
+  return `${turn.body}
+    <div class="msg-sep"></div>
+    <button class="btn-continue" data-action="continue">${turn.action} →</button>`;
+}
+
+function buildChoicePane(turn, choices) {
+  const btns = choices.map(c => `
+    <button class="choice-btn" data-choice="${c.letter}">
+      <span class="choice-letter">${c.letter}</span>
+      <div class="choice-content">
+        <div class="choice-title">${stripEmoji(c.title)}</div>
+        ${c.desc ? `<div class="choice-desc">${c.desc}</div>` : ''}
+      </div>
+    </button>`).join('');
+
+  return `${turn.body}
+    <div class="msg-sep"></div>
+    <div class="choices-label">Choisissez votre action</div>
+    <div class="choices-grid">${btns}</div>`;
+}
+
+function buildAutoEventPane(turn) {
+  const eventType = getEventType();
+  state.eventType = eventType;
+  const ev = AUTO_EVENTS[eventType];
+  return `
+    <div class="event-banner">
+      <div class="event-banner-tag">Événement inattendu · Aucune intervention possible</div>
+      <div class="event-banner-title">${ev.heading}</div>
+    </div>
+    ${ev.body}
+    <div class="msg-sep"></div>
+    <button class="btn-continue" data-action="event-continue">Prendre acte →</button>`;
+}
+
+function buildEventResponsePane(turn) {
+  const resp = EVENT_RESPONSES[state.eventType];
+  const ev   = AUTO_EVENTS[state.eventType];
+  const btns = resp.choices.map(c => `
+    <button class="choice-btn" data-choice="${c.letter}">
+      <span class="choice-letter">${c.letter}</span>
+      <div class="choice-content">
+        <div class="choice-title">${stripEmoji(c.title)}</div>
+        ${c.desc ? `<div class="choice-desc">${c.desc}</div>` : ''}
+      </div>
+    </button>`).join('');
+  return `
+    <div class="event-banner">
+      <div class="event-banner-tag">Réponse requise · ${ev.label}</div>
+      <div class="event-banner-title">${ev.heading} — Votre réponse</div>
+    </div>
+    ${resp.body}
+    <div class="msg-sep"></div>
+    <div class="choices-label">Choisissez votre réponse</div>
+    <div class="choices-grid">${btns}</div>`;
+}
+
+function buildForcedEndPane(turn) {
+  return `
+    <div class="event-banner">
+      <div class="event-banner-tag">Breaking news · Basculement systémique</div>
+      <div class="event-banner-title">Plusieurs zones critiques sont touchées simultanément</div>
+    </div>
+    ${turn.body}
+    <div class="msg-sep"></div>
+    <button class="btn-continue" id="t12-final-btn" data-action="final-collapse" ${state.tour12AlertsDone ? '' : 'disabled'}>${state.tour12AlertsDone ? 'Lire le constat final →' : 'Fermez les alertes pour continuer'}</button>`;
+}
+
+function updateTour12Progress() {
+  const progress = document.getElementById('t12-progress');
+  const btn = document.getElementById('t12-final-btn');
+  if (progress) progress.textContent = '';
+  if (btn) {
+    btn.disabled = !state.tour12AlertsDone;
+    btn.textContent = state.tour12AlertsDone ? 'Lire le constat final →' : 'Fermez les alertes pour continuer';
+  }
+}
+
+function showTour12AlertCard(alertData) {
+  const layer = document.getElementById('t12-alert-layer');
+  if (!layer) return;
+
+  const bodyHtml = alertData.body.map(line => `<p>${line}</p>`).join('');
+  layer.innerHTML = `
+    <div class="t12-alert" role="dialog" aria-modal="true">
+      <div class="t12-alert-head">
+        <div class="t12-alert-type">${alertData.type}</div>
+        <button class="t12-alert-close" data-close-t12>Fermer</button>
+      </div>
+      <div class="t12-alert-body">
+        <div class="t12-alert-title">${alertData.title}</div>
+        <div class="t12-alert-msg">${bodyHtml}</div>
+      </div>
+      <div class="t12-alert-foot">Alerte intrusive ${state.tour12AlertIndex + 1}/${TOUR12_ALERTS.length}</div>
+    </div>
+  `;
+  layer.style.display = 'flex';
+
+  const closeBtn = layer.querySelector('[data-close-t12]');
+  if (closeBtn) {
+    closeBtn.focus();
+    closeBtn.addEventListener('click', () => {
+      layer.style.display = 'none';
+      layer.innerHTML = '';
+      state.tour12AlertIndex++;
+      if (state.tour12AlertIndex >= TOUR12_ALERTS.length) {
+        state.tour12AlertsDone = true;
+        updateTour12Progress();
+      } else {
+        updateTour12Progress();
+        setTimeout(triggerNextTour12Alert, 180);
+      }
+    }, { once: true });
+  }
+}
+
+function triggerNextTour12Alert() {
+  if (state.tour12AlertsDone) return;
+  const alertData = TOUR12_ALERTS[state.tour12AlertIndex];
+  if (!alertData) {
+    state.tour12AlertsDone = true;
+    updateTour12Progress();
+    return;
+  }
+  showTour12AlertCard(alertData);
+}
+
+function startTour12AlertStorm() {
+  if (state.tour12AlertsDone) {
+    updateTour12Progress();
+    return;
+  }
+  updateTour12Progress();
+  setTimeout(triggerNextTour12Alert, 260);
+}
+
+function renderEndScreen(pane, isWin) {
+  const ecoLow = state.economy     <= 3;
+  const envLow = state.environment <= 3;
+  const socLow = state.society     <= 3;
+
+  let eyebrow, title, text;
+
+  if (!isWin) {
+    const reasons = {
+      economy:     ['Effondrement économique',          'Les structures économiques ne peuvent plus se maintenir. Le système est entré en crise ouverte.'],
+      environment: ['Dégradation écologique irréversible', 'Les processus environnementaux ont franchi des seuils de non-retour. Le système Terre a changé de régime.'],
+      society:     ['Crise sociale majeure',            'La cohésion sociale s\'est effondrée. Les fractures rendent toute gouvernance impossible.'],
+      systemic:    ['Rupture systémique',               'Les déséquilibres accumulés convergent. Les dimensions économique, sociale et environnementale se dégradent ensemble et le système ne peut plus retrouver sa stabilité.']
+    };
+    eyebrow = 'Point de rupture atteint';
+    [title, text] = reasons[state.gameOverReason] || reasons.systemic;
+  } else {
+    const min = Math.min(state.economy, state.environment, state.society);
+    if (min >= 6) { eyebrow='Résultat'; title='Équilibre maintenu';   text='Vous avez traversé l\'Anthropocène en préservant les trois dimensions du système. Une performance rare — et fragile.'; }
+    else if(min>=4){ eyebrow='Résultat'; title='Transition en cours'; text='Certaines dimensions ont souffert, mais les conditions d\'une transition sont réunies. L\'avenir reste incertain mais possible.'; }
+    else if(min>=2){ eyebrow='Résultat'; title='Système fragilisé';   text='Le système a survécu dans un état appauvri. Certaines contraintes sont désormais permanentes et les marges de manœuvre quasi nulles.'; }
+    else           { eyebrow='Résultat'; title='Équilibre précaire';  text='Survie de justesse. L\'un de vos indicateurs est en zone critique. La moindre perturbation suffirait à faire basculer le système.'; }
+  }
+
+  pane.innerHTML = `
+    <div class="endscreen ${isWin?'':'gameover'} fade-in">
+      <div class="end-eyebrow">${eyebrow}</div>
+      <div class="end-title">${title}</div>
+      ${!isWin ? `<div class="gameover-reason">${{economy:'Économie → 0',environment:'Environnement → 0',society:'Société → 0',systemic:'Seuils systémiques franchis'}[state.gameOverReason] || 'Fin systémique'}</div>` : ''}
+      <p class="end-text">${text}</p>
+      <div class="end-scores">
+        <div class="end-score-item">
+          <div class="end-score-num ${ecoLow?'low':''}">${state.economy}</div>
+          <div class="end-score-label">Économie</div>
+        </div>
+        <div class="end-score-item">
+          <div class="end-score-num ${envLow?'low':''}">${state.environment}</div>
+          <div class="end-score-label">Environnement</div>
+        </div>
+        <div class="end-score-item">
+          <div class="end-score-num ${socLow?'low':''}">${state.society}</div>
+          <div class="end-score-label">Société</div>
+        </div>
+      </div>
+      <div class="end-divider"></div>
+      ${(!isWin && state.gameOverReason === 'systemic')
+        ? `<button class="btn-restart" id="btn-restart" disabled>Recommencer</button>
+           <button class="btn-restart btn-restart-endnote" id="btn-final-reflection">Il n'est pas possible de recommencer, est-ce vraiment la fin ?</button>`
+        : `<button class="btn-restart" id="btn-restart">Recommencer</button>`
+      }
+    </div>
+  `;
+
+  const restartBtn = document.getElementById('btn-restart');
+  if (restartBtn && !restartBtn.disabled) {
+    restartBtn.addEventListener('click', restartGame);
+  }
+  const reflectionBtn = document.getElementById('btn-final-reflection');
+  if (reflectionBtn) {
+    reflectionBtn.addEventListener('click', () => {
+      window.location.href = 'final-reflexion.html';
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ACTION HANDLERS
+// ══════════════════════════════════════════════════════════════
+
+function afterChoice(turn) {
+  const pressure = TURN_PRESSURE[turn.id];
+  const hasPressure = pressure && Object.keys(pressure).length > 0;
+
+  if (hasPressure) {
+    setTimeout(() => {
+      const prev = {economy:state.economy, environment:state.environment, society:state.society};
+      const keyMap = {economy:'💰 ÉCO', environment:'🌿 ENV', society:'👥 SOC'};
+      const parts = [];
+      Object.entries(pressure).forEach(([k, v]) => {
+        state[k] = clamp(state[k] + v, 0, state.MAX);
+        parts.push(`${keyMap[k]} ${v}`);
+      });
+      updateScores(prev);
+      showNotif('🌍 Système Terre', `Pression systémique — ${parts.join('  ·  ')}`);
+      if (checkGameOver()) {
+        renderReadingPane();
+      } else if (state.currentIdx === TURNS.length - 1) {
+        state.gameWon = true;
+        renderEndScreen(document.getElementById('reading-pane'), true);
+      } else {
+        advanceTurn();
+      }
+    }, 750);
+  } else {
+    if (state.currentIdx === TURNS.length - 1) {
+      state.gameWon = true;
+      renderEndScreen(document.getElementById('reading-pane'), true);
+    } else {
+      advanceTurn();
+    }
+  }
+}
+
+function attachActions(pane, turn) {
+  if (turn.id === 'tour12' && turn.type === 'forced_end') {
+    startTour12AlertStorm();
+  }
+
+  pane.querySelectorAll('[data-action="continue"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.history[turn.id] = { letter: null, title: null, effects: {} };
+      advanceTurn();
+    });
+  });
+
+  pane.querySelectorAll('[data-action="event-continue"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.history[turn.id] = { letter: null, title: null, effects: AUTO_EVENTS[state.eventType].effects };
+      const dead = applyEffects(AUTO_EVENTS[state.eventType].effects);
+      if (dead) renderEndScreen(document.getElementById('reading-pane'), false);
+      else advanceTurn();
+    });
+  });
+
+  pane.querySelectorAll('[data-action="final-collapse"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const layer = document.getElementById('t12-alert-layer');
+      if (layer) { layer.style.display = 'none'; layer.innerHTML = ''; }
+      const prev = { economy: state.economy, environment: state.environment, society: state.society };
+      state.economy = 0;
+      state.environment = 0;
+      state.society = 0;
+      updateScores(prev);
+      state.history[turn.id] = { letter: null, title: 'Rupture systémique', effects: {} };
+      state.gameOver = true;
+      state.gameOverReason = 'systemic';
+      renderEndScreen(document.getElementById('reading-pane'), false);
+    });
+  });
+
+  pane.querySelectorAll('.choice-btn[data-choice]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const letter  = btn.dataset.choice;
+      const choices = turn.type === 'event_response'
+        ? EVENT_RESPONSES[state.eventType].choices
+        : turn.choices;
+      const choice = choices.find(c => c.letter === letter);
+      if (!choice) return;
+
+      pane.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('chosen'));
+      btn.classList.add('chosen');
+
+      setTimeout(() => {
+        state.history[turn.id] = { letter: choice.letter, title: choice.title, effects: choice.effects };
+        const dead = applyEffects(choice.effects);
+        if (dead) {
+          renderEndScreen(document.getElementById('reading-pane'), false);
+        } else {
+          afterChoice(turn);
+        }
+      }, 350);
+    });
+  });
+}
+
+function advanceTurn() {
+  if (state.currentIdx < TURNS.length - 1) {
+    state.currentIdx++;
+    state.viewIdx = state.currentIdx;
+    const newTurn = TURNS[state.currentIdx];
+    triggerTurnNotif(newTurn.id);
+
+    // Show arrival animation first, then open reading pane
+    state.newArrival = true;
+    renderEmailList();
+    setTimeout(() => {
+      state.newArrival = false;
+      renderReadingPane();
+    }, 420);
+  }
+}
+
+// ── ARCHIVE VIEW ──────────────────────────────────────
+function renderArchivedPane(pane, turn) {
+  const hist = state.history[turn.id];
+
+  let content = '';
+  if (turn.type === 'choice' || turn.type === 'event_response') {
+    const choices = turn.type === 'event_response'
+      ? EVENT_RESPONSES[turn.eventTypeRef || state.eventType]?.choices || []
+      : turn.choices;
+    const btns = choices.map(c => {
+      const isChosen = hist && c.letter === hist.letter;
+      return `
+        <button class="choice-btn arc-btn ${isChosen ? 'arc-chosen' : 'arc-dim'}" disabled>
+          <span class="choice-letter">${c.letter}</span>
+          <div class="choice-content">
+            <div class="choice-title">${stripEmoji(c.title)}</div>
+            ${c.desc ? `<div class="choice-desc">${c.desc}</div>` : ''}
+            <div class="choice-effects">${fmt(c.effects)}</div>
+          </div>
+          ${isChosen ? '<span class="arc-check">✓</span>' : ''}
+        </button>`;
+    }).join('');
+    content = `${turn.body || ''}
+      <div class="msg-sep"></div>
+      <div class="choices-label arc-label">✓ Décision archivée</div>
+      <div class="choices-grid">${btns}</div>`;
+  } else if (turn.type === 'auto_event' && state.eventType) {
+    const ev = AUTO_EVENTS[state.eventType];
+    content = `
+      <div class="event-banner">
+        <div class="event-banner-tag">Événement automatique</div>
+        <div class="event-banner-title">${ev.heading}</div>
+      </div>
+      ${ev.body}
+      <div class="msg-sep"></div>
+      <p style="font-size:12px;color:var(--g500);font-family:var(--mono);margin-bottom:20px;">Effets appliqués : ${fmt(ev.effects)}</p>
+      <div class="arc-read-note">✓ Événement enregistré</div>`;
+  } else {
+    content = `${turn.body || ''}
+      <div class="msg-sep"></div>
+      <div class="arc-read-note">✓ Lu — aucune décision requise</div>`;
+  }
+
+  const addr = turn.from.toLowerCase()
+    .replace(/['\s]/g,'.').replace(/[éèê]/g,'e').replace(/[â]/g,'a')
+    .replace(/[ô]/g,'o').replace(/[î]/g,'i').replace(/[ùû]/g,'u')
+    .replace(/[ç]/g,'c').replace(/[à]/g,'a').replace(/[&]/g,'');
+
+  pane.innerHTML = `
+    <div class="rp-head arc-head">
+      <div class="arc-badge">📁 Archive</div>
+      <div class="rp-subject">${stripEmoji(turn.subject)}</div>
+      <div class="rp-meta">
+        <div class="rp-avatar">${turn.initials}</div>
+        <div>
+          <div class="rp-from-name">${turn.from}</div>
+          <div class="rp-from-addr">${addr}@systemeterre.int</div>
+        </div>
+        <div class="rp-date">${turn.date}</div>
+      </div>
+    </div>
+    <div class="rp-body">
+      <div class="msg-body">${content}</div>
+    </div>
+  `;
+  animateContent();
+}
+
+function restartGame() {
+  clearTimeout(notifTimer);
+  const layer = document.getElementById('t12-alert-layer');
+  if (layer) { layer.style.display = 'none'; layer.innerHTML = ''; }
+  state.economy = 8; state.environment = 8; state.society = 8;
+  state.currentIdx = 0;
+  state.viewIdx = 0;
+  state.history = {};
+  state.readTurns.clear();
+  state.eventType = null;
+  state.gameOver = false; state.gameOverReason = null; state.gameWon = false;
+  state.newArrival = false;
+  state.tour12AlertsDone = false;
+  state.tour12AlertIndex = 0;
+  state.gameStarted = true;
+  updateScores();
+  updateDangerLines();
+  renderEmailList();
+  renderReadingPane();
+  scheduleNextNotif();
+}
+
+function applyStartTourFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get('start');
+  if (!raw) return;
+
+  const n = parseInt(raw, 10);
+  if (!Number.isInteger(n)) return;
+
+  // Allowed: 0 (orientation) to final tour number.
+  if (n < 0 || n > 12) return;
+
+  const targetId = n === 0 ? 'orientation' : `tour${n}`;
+  const idx = TURNS.findIndex(t => t.id === targetId);
+  if (idx < 0) return;
+
+  state.currentIdx = idx;
+  state.viewIdx = idx;
+  // Consider previous turns as already read to keep unread counter coherent.
+  state.readTurns = new Set(TURNS.slice(0, idx).map(t => t.id));
+}
+
+function setupDebugJumpPanel() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('debug') !== '1') return;
+
+  const wrap = document.getElementById('debug-jump');
+  if (!wrap) return;
+
+  wrap.style.display = 'flex';
+  wrap.innerHTML = `
+    <span>DEBUG</span>
+    <button data-jump="9">T9</button>
+    <button data-jump="10">T10</button>
+    <button data-jump="11">T11</button>
+    <button data-jump="12">T12</button>
+  `;
+
+  wrap.querySelectorAll('button[data-jump]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const n = btn.dataset.jump;
+      const next = new URL(window.location.href);
+      next.searchParams.set('start', n);
+      next.searchParams.set('debug', '1');
+      window.location.href = next.toString();
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  INTRO
+// ══════════════════════════════════════════════════════════════
+
+document.getElementById('intro-start').addEventListener('click', () => {
+  const btn     = document.getElementById('intro-start');
+  const overlay = document.getElementById('intro-overlay');
+  const app     = document.getElementById('app');
+
+  // Brief button feedback before transition
+  btn.style.transition = 'background 0.1s, opacity 0.1s';
+  btn.style.background = 'rgba(255,255,255,0.18)';
+  btn.style.opacity    = '0.6';
+
+  setTimeout(() => {
+    overlay.classList.add('hiding');
+    app.classList.add('visible');
+    setTimeout(() => { overlay.style.display = 'none'; }, 700);
+  }, 130);
+
+  state.gameStarted = true;
+  scheduleNextNotif();
+  // First random notif after 18 seconds
+  setTimeout(showNextRandomNotif, 18000);
+});
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+
+updateScores();
+updateDangerLines();
+applyStartTourFromUrl();
+setupDebugJumpPanel();
+renderEmailList();
+renderReadingPane();
+</script>
+</body>
+</html>
